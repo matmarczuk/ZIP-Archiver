@@ -1,6 +1,8 @@
 from typing import List
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+
 from pydantic import BaseModel, Field, validator
 import validators
 import json
@@ -12,6 +14,7 @@ import time
 import os
 import zipfile
 import enum
+
 
 class StateEnum(enum.Enum):
     IN_PROGRESS = "in-progress"
@@ -83,9 +86,12 @@ async def get_status(archive_hash : str):
     try:
         state = zipArchiver[archive_hash].state.value
     except KeyError:
-        raise HTTPException(status_code=404, detail="Requested hash no foud")
+        raise HTTPException(status_code = 404, detail = "Requested archive hash no foud")
     return {"status" : state}
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+@app.get("/archive/get/{file_name}")
+async def get_archive(file_name : str):
+    filePath = "/zip_archive/" + file_name
+    if not os.path.isfile(filePath) :
+        raise HTTPException(status_code = 404, detail = "File not found")
+    return FileResponse(filePath)
