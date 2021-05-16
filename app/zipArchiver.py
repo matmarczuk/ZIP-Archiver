@@ -14,15 +14,22 @@ class ZipArchiver:
         self.name = name
         self.state = StateEnum.IN_PROGRESS
         self.urlList = urlList
-        self.thread = threading.Thread(target=self.createArchive, name=self.name)
+        self.thread = threading.Thread(target=self.create_archive, name=self.name)
 
     def start_processing(self):
         self.thread.start()
 
-    def createArchive(self):
+    def send_webhook(self):
+        webhookUrl = os.getenv('WEBHOOK_URL')
+        if webhookUrl :
+            link = "localhost/archive/get/" + self.name + ".zip"
+            r = requests.post(webhookUrl, json = {"link": link })
+
+    def create_archive(self):
         self.archivePath = "/zip_archive/" + self.name + ".zip"
         for url in self.urlList:
             r = requests.get(str(url), stream=True)
             z = zipfile.ZipFile(self.archivePath, "a", zipfile.ZIP_DEFLATED)
             z.writestr(os.path.basename(url), r.content)
         self.state = StateEnum.COMPLETED
+        self.send_webhook()
