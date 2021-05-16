@@ -15,7 +15,6 @@ import os
 import zipfile
 import enum
 
-
 class StateEnum(enum.Enum):
     IN_PROGRESS = "in-progress"
     COMPLETED = "completed"
@@ -32,11 +31,13 @@ class ZipArchiver:
         self.thread.start()
 
     def createArchive(self):
+        self.archivePath = "/zip_archive/" + self.name + ".zip"
         for url in self.urlList:
             r = requests.get(str(url), stream=True)
-            z = zipfile.ZipFile("/zip_archive/" + self.name + ".zip", "a", zipfile.ZIP_DEFLATED)
+            z = zipfile.ZipFile(self.archivePath, "a", zipfile.ZIP_DEFLATED)
             z.writestr(os.path.basename(url), r.content)
         self.state = StateEnum.COMPLETED
+
 
 class UrlList(BaseModel):
     urls: List[str] = Field(..., min_items=1)
@@ -65,7 +66,7 @@ class UrlList(BaseModel):
         if unreachableUrls:
             errorMsg = errorMsg + "Some of sent urls are unreachable " + json.dumps(unreachableUrls) + " Please check it and try again "
         if errorMsg:
-            raise ValueError(errorMsg)
+            raise HTTPException(status_code = 422, detail = errorMsg)
         return urls
 
 def generate_hash():
@@ -84,10 +85,13 @@ async def create_archive(urlList: UrlList):
 @app.get("/api/archive/status/{archive_hash}")
 async def get_status(archive_hash : str):
     try:
-        state = zipArchiver[archive_hash].state.value
+        state = zipArchiver[archive_hash].state
     except KeyError:
         raise HTTPException(status_code = 404, detail = "Requested archive hash no foud")
-    return {"status" : state}
+    if state is StateEnum.IN_PROGRESS or StateEnum.ERROR:
+        return {"status" : state.value}
+    elif state is StateEnum.COMPLETED:
+        return {"status" : state.value, "url" : "http://localhost/archive/get/" + archive_hash + ".zip"}
 
 @app.get("/archive/get/{file_name}")
 async def get_archive(file_name : str):
