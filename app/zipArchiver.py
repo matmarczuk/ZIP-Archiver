@@ -21,14 +21,25 @@ class ZipArchiver:
     def send_webhook(self):
         webhookUrl = os.getenv('WEBHOOK_URL')
         if webhookUrl :
-            link = settings.HOSTNAME + "/archive/get/" + self.name + ".zip"
-            r = requests.post(webhookUrl, json = {"link": link })
+            try:
+                link = settings.HOSTNAME + "/archive/get/" + self.name + ".zip"
+                r = requests.post(webhookUrl, json = {"link": link })
+                r.raise_for_status()
+            except:
+                print("Failed to reach webhook url " + webhookUrl)
 
     def create_archive(self):
         self.archivePath = settings.OUTPUT_DIR + self.name + ".zip"
         for url in self.urlList:
-            r = requests.get(str(url), stream=True)
-            z = zipfile.ZipFile(self.archivePath, "a", zipfile.ZIP_DEFLATED)
-            z.writestr(os.path.basename(url), r.content)
+            try:
+                r = requests.get(str(url), stream=True)
+                r.raise_for_status()
+            except:
+                print("Url " + url + " not reachable")
+            try:
+                z = zipfile.ZipFile(self.archivePath, "a", zipfile.ZIP_DEFLATED)
+                z.writestr(os.path.basename(url), r.content)
+            except:
+                print("Failed to create ZIP archive " + self.archivePath)
         os.remove(settings.IN_PROGRESS_DIR + self.name)
         self.send_webhook()

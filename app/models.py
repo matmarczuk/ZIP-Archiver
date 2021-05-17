@@ -21,7 +21,7 @@ class UrlList(BaseModel):
                         pass
                     else:
                         incorrectUrls.append(url)
-                except requests.exceptions.RequestException as e:
+                except requests.exceptions.RequestException:
                     unreachableUrls.append(url)
             else:
                 incorrectUrls.append(url)

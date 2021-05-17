@@ -19,8 +19,11 @@ async def check_for_unfinished():
         for file in fileList:
             if os.path.isfile(settings.OUTPUT_DIR + file + ".zip") :
                 os.remove(settings.OUTPUT_DIR + file + ".zip")
-            with open(settings.IN_PROGRESS_DIR + file) as f:
-                urls = f.read().splitlines()
+                try:
+                    f = open(settings.IN_PROGRESS_DIR + file)
+                    urls = f.read().splitlines()
+                except:
+                    print("Cannot read in-progress file")
             zipArchiver = ZipArchiver(file, urls)
             zipArchiver.start_processing()
 
@@ -28,11 +31,14 @@ async def check_for_unfinished():
 async def create_archive(urlList: UrlList):
     archiveHash = str(uuid.uuid4())
     zipArchiver = ZipArchiver(archiveHash, urlList.urls)
-    urlFile = open(settings.IN_PROGRESS_DIR + archiveHash, "w")
-    for url in urlList.urls:
-        urlFile.write(url + "\n")
-    urlFile.close()
-
+    try:
+        urlFile = open(settings.IN_PROGRESS_DIR + archiveHash, "w")
+        for url in urlList.urls:
+            urlFile.write(url + "\n")
+        urlFile.close()
+    except:
+        raise HTTPException(status_code = 500, detail = "Cannot process request")
+    
     zipArchiver.start_processing()
     return {"archive_hash" : archiveHash}
 
