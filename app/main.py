@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 
 import uuid
@@ -17,7 +17,7 @@ async def check_for_unfinished():
     fileList = os.listdir(settings.IN_PROGRESS_DIR)
     if(fileList) :
         for file in fileList:
-            if os.path.isfile(settings.OUTPUT_DIR + file + ".zip") :
+            if os.path.isfile(settings.OUTPUT_DIR + file + ".zip"):
                 os.remove(settings.OUTPUT_DIR + file + ".zip")
                 try:
                     f = open(settings.IN_PROGRESS_DIR + file)
@@ -31,6 +31,7 @@ async def check_for_unfinished():
 async def create_archive(urlList: UrlList):
     archiveHash = str(uuid.uuid4())
     zipArchiver = ZipArchiver(archiveHash, urlList.urls)
+
     try:
         urlFile = open(settings.IN_PROGRESS_DIR + archiveHash, "w")
         for url in urlList.urls:
@@ -51,9 +52,13 @@ async def get_status(archive_hash : str):
     else:
         raise HTTPException(status_code = 404, detail = "Requested archive hash no foud")
 
+def remove_file(path: str):
+    os.remove(path)
+
 @app.get("/archive/get/{file_name}")
-async def get_archive(file_name : str):
+async def get_archive(file_name : str, background_tasks: BackgroundTasks):
     filePath = settings.OUTPUT_DIR + file_name
     if not os.path.isfile(filePath):
         raise HTTPException(status_code = 404, detail = "File not found")
+    background_tasks.add_task(remove_file, filePath)
     return FileResponse(filePath)

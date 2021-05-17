@@ -1,4 +1,4 @@
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7
 RUN pip install validators requests aiofiles 
 COPY ./app /app
-RUN mkdir /zip_archive /zip_archive/in-progress
+RUN mkdir /zip_archive /in-progress

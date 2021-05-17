@@ -2,7 +2,6 @@ import requests
 import threading
 import os
 import zipfile
-import enum
 
 import settings
     

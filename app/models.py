@@ -17,10 +17,7 @@ class UrlList(BaseModel):
             if validators.url(url):
                 try:
                     response = requests.head(url)
-                    if response.status_code == 200:
-                        pass
-                    else:
-                        incorrectUrls.append(url)
+                    response.raise_for_status()
                 except requests.exceptions.RequestException:
                     unreachableUrls.append(url)
             else:
