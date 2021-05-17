@@ -4,7 +4,8 @@ import os
 import zipfile
 
 import settings
-    
+
+
 class ZipArchiver:
     def __init__(self, name, urlList):
         self.name = name
@@ -19,10 +20,10 @@ class ZipArchiver:
 
     def send_webhook(self):
         webhookUrl = os.getenv('WEBHOOK_URL')
-        if webhookUrl :
+        if webhookUrl:
             try:
                 link = settings.HOSTNAME + "/archive/get/" + self.name + ".zip"
-                r = requests.post(webhookUrl, json = {"link": link })
+                r = requests.post(webhookUrl, json={"link": link})
                 r.raise_for_status()
             except:
                 print("Failed to reach webhook url " + webhookUrl)
