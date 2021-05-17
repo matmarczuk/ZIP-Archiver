@@ -3,6 +3,8 @@ import threading
 import os
 import zipfile
 import enum
+
+import settings
     
 class ZipArchiver:
     def __init__(self, name, urlList):
@@ -19,14 +21,14 @@ class ZipArchiver:
     def send_webhook(self):
         webhookUrl = os.getenv('WEBHOOK_URL')
         if webhookUrl :
-            link = "http://localhost/archive/get/" + self.name + ".zip"
+            link = settings.HOSTNAME + "/archive/get/" + self.name + ".zip"
             r = requests.post(webhookUrl, json = {"link": link })
 
     def create_archive(self):
-        self.archivePath = "/zip_archive/" + self.name + ".zip"
+        self.archivePath = settings.OUTPUT_DIR + self.name + ".zip"
         for url in self.urlList:
             r = requests.get(str(url), stream=True)
             z = zipfile.ZipFile(self.archivePath, "a", zipfile.ZIP_DEFLATED)
             z.writestr(os.path.basename(url), r.content)
-        os.remove("/zip_archive/in-progress/" + self.name)
+        os.remove(settings.IN_PROGRESS_DIR + self.name)
         self.send_webhook()
